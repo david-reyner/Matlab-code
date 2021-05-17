@@ -91,7 +91,7 @@ try
 F = @(x) phase_equation_flow(lin_intpol, pt, A, T, T_prime, n, x, options_ode_bis) - x; % Function to find its zeros
 tol = 5e-12; % Bisection method tolerance
 
-% Files where stable/unstable will be stored
+% Files where stable/unstable fixed/periodic points will be stored
 if type == 1
     name_file1 = ['bisect_mth_stb_ping_coord_', num2str(coord), ...
         '_A', num2str(A), '_k', num2str(k), '_p', num2str(round(1000*p)/1000), ...
