@@ -4,7 +4,7 @@
 %%%%%%%%%%%%%%%%%%%%%%% for Von Mises distributions %%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% This script computes the composition of the stroboscopic map q times in
+% This script computes the composition of the stroboscopic map P q times in
 % order to spot its q-periodic points (fixed points if q = 1). After that,
 % such fixed/periodic points are determined using a bisection method.
 
@@ -15,7 +15,7 @@ format long;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%% Poincare Phase Map %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %_________________________________________________________________________%
 
-% Tolerances
+% Integration tolerances (phase equation)
 options_ode_str = odeset('AbsTol', 1e-12, 'RelTol', 1e-10, 'InitialStep', 1e-3);
 
 % Period relation between the forcing and the oscillator
@@ -38,7 +38,7 @@ n = q; % Fixed or q-periodic points
 try
 
 for i = 1:length(theta_n)
-    % Stroboscopic map: Flow of the phase equation after n periods of the forcing
+    % Stroboscopic map: Flow of the phase equation after n periods of the forcer
     [~, theta] = ode45(@(l, theta) phase_equation(l, theta, lin_intpol, ...
         pt(l), A, T), [0 n*T_prime], theta_n(i), options_ode_str);
     theta_n1(i) = mod(theta(end),T);
@@ -53,7 +53,7 @@ catch
     fclose(file);
 end
 
-% Save data
+% Saving data
 if type == 1
     name_file = ['stroboscopic_map_ping_coord_', num2str(coord)];
 else
@@ -74,18 +74,18 @@ fclose(file);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% Bisection method %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %_________________________________________________________________________%
 
-% Tolerances
+% Integration tolerances (stroboscopic map)
 options_ode_bis = odeset('AbsTol', 1e-16, 'RelTol', 5e-14, 'InitialStep', 1e-3);
 
 % Restricting to interval containing fixed/periodic points of the Poincare Phase Map
 dif = theta_n1 - theta_n;
 sta_fxd_pts = find(dif(1:end-1) >= 0 & dif(2:end) <= 0); % Change of sign: from positive to negative --> stability
-sta_fxd_pts = sta_fxd_pts(abs(dif(sta_fxd_pts) - dif(sta_fxd_pts+1)) < 1); % Removing the one due to the modulus
+sta_fxd_pts = sta_fxd_pts(abs(dif(sta_fxd_pts) - dif(sta_fxd_pts+1)) < 1); % Removing the sign change due to the modulus
 usta_fxd_pts = find(dif(1:end-1) <= 0 & dif(2:end) >= 0); % Change of sign: from negative to positive --> instability
-usta_fxd_pts = usta_fxd_pts(abs(dif(usta_fxd_pts) - dif(usta_fxd_pts+1)) < 1); % Removing the one due to the modulus
+usta_fxd_pts = usta_fxd_pts(abs(dif(usta_fxd_pts) - dif(usta_fxd_pts+1)) < 1); % Removing the sign change due to the modulus
 
 try
-    
+
 % Bisection method to find fixed/periodic points of the Poincare Phase Map
 % options_ode_bis.MaxStep = 0.1*abs(n*T_prime);
 F = @(x) phase_equation_flow(lin_intpol, pt, A, T, T_prime, n, x, options_ode_bis) - x; % Function to find its zeros

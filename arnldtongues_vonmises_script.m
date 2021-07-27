@@ -39,7 +39,7 @@ branch
 
 format long;
 
-% Changing tolerances
+% Integration tolerances (1st and 2nd variational equations of phase equation)
 options_ode = odeset('AbsTol', 1e-14, 'RelTol', 5e-14, 'InitialStep', 1e-3);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Loading data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -167,12 +167,12 @@ end
 % Arc step
 delta_s = 0.025;
 
-% Building filename where data will be stored
+% Files where data will be stored
 if branch == 1
-    % File to save the left branch
+    % Filename to save the left branch
     name_file = ['left_branch_', num2str(p_ord), num2str(q)];
 else
-    % File to save the right branch
+    % Filename to save the right branch
     name_file = ['right_branch_', num2str(p_ord), num2str(q)];
 end
 
@@ -196,7 +196,7 @@ fclose(fopen(fullfile(folder, name_file), 'w'));
 try
 
 j = 1;
-while j <= 2
+while j <= 2 % j == 1: Branch lower part (A -> 0), j == 2 Branch upper part (A -> 2)
     % Initial point near the real left/right Arnold tongue's boundary
     if branch == 1
         w0 = inc_left;
@@ -266,7 +266,7 @@ while j <= 2
             arnold_iter = arnold_iter + 1; % Increment continuation steps counter
         else % Uncontrolled growth: Reduce step delta_s
             reduction = reduction + 1; % Counting the number of delta_s reductions
-            if reduction > 10
+            if reduction > 10 % Stop execution after 10 reductions of the step size
                 fprintf('\nStep delta_s too small: %f\n', delta_s/(2^reduction));
                 return
             end
