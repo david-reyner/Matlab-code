@@ -4,11 +4,11 @@
 % Here we compute the boundaries of the Arnold tongues arising from a
 % PING/ING oscillator externally forced by a Von Mises stimulus. To do so
 % we determine the left/right saddle-node bifurcations of the stroboscopic 
-% map and continuate them using a corrector-predictor method, based on a 
-% Newton method and a tangent approximation. The initial condition consists
-% of one of the stable fixed/periodic points of the stroboscopic map (found
-% using a bisection method), together with the periods relation T/T* and 
-% the amplitude A.
+% map (of the phase equation) and continuate them using a corrector -
+% predictor method, based on a Newton method and a tangent approximation. 
+% The initial condition consists of one of the stable fixed/periodic points
+% of the stroboscopic map (found using a bisection method), together with 
+% the periods relation T/T* and the amplitude A.
 
 % The next set of parameters must be initialized before running:
 type
