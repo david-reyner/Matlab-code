@@ -23,7 +23,10 @@ function dx = phase_equation_variationals_vonmises(t, x, Z, dZ, ddZ, mu, k, A, T
 %     dvonmises = (1/(T_prime^2*I0k))*exp(k*cos(2*pi*(t-mu)/T_prime))*((2*pi*k*(t-mu)/T_prime)*sin(2*pi*(t-mu)/T_prime)-1);
     
     % --> If normalizing by 2\pi
-    dvonmises = (1/(T_prime^2*I0k))*exp(k*cos(2*pi*(t-mu)/T_prime))*(k*(t-mu)*sin(2*pi*(t-mu)/T_prime));
+%     dvonmises = (1/(T_prime^2*I0k))*exp(k*cos(2*pi*(t-mu)/T_prime))*(k*(t-mu)*sin(2*pi*(t-mu)/T_prime));
+    
+    % --> Without normalizing
+    dvonmises = (1/(T_prime^2*I0k))*exp(k*cos(2*pi*(t-mu)/T_prime))*(2*pi*k*(t-mu)*sin(2*pi*(t-mu)/T_prime));
     
     % Partial derivatives of the phase equation's vector field
     DF_theta = A*dZ(theta)*vonmises;

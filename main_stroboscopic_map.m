@@ -15,7 +15,7 @@ format long;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%% Stroboscopic map %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Integration tolerances (phase equation)
-options_ode_str = odeset('AbsTol', 1e-12, 'RelTol', 1e-10, 'InitialStep', 1e-3);
+options_ode_str = odeset('AbsTol', 1e-13, 'RelTol', 1e-11, 'InitialStep', 1e-3);
 
 % Period relation between the external input and the oscillator
 T_prime = p*T;
@@ -25,10 +25,10 @@ pt = @(t) vonmises_dist(t,0,k,T_prime);
 
 % Linear interpolation of the component coord of the iPRC (interp1q or griddedInterpolant)
 % lin_intpol = @(l) interp1q(t, Z(:,coord), l); % Quick 1D linear interpolation (not recommended)
-lin_intpol = griddedInterpolant(t, Z(:,coord)); % GriddedInterpolant
+lin_intpol = griddedInterpolant(t, Z(:,coord), 'makima'); % GriddedInterpolant function
 
 % Discretization for the stroboscopic map
-num = 7500;
+num = 10000;
 theta_n = linspace(0, T, num)'; % domain of the strb. map is [0,T]
 theta_n1 = zeros(num,1); % to store the images by P of the discretized domain
 
@@ -43,11 +43,11 @@ for i = 1:length(theta_n)
     theta_n1(i) = mod(theta(end),T);
 end
 
-catch
+catch ME
     file = fopen('errorFileEixam_StroboscopicMap.txt', 'a');
     datenow = datestr(now);
     datenow = strcat(datenow, ': ');
-    lastmsg = lasterr;
+    lastmsg = ME.message;
     fprintf(file, '%s %s\r\n', datenow, lastmsg);
     fclose(file);
 end
@@ -133,11 +133,11 @@ end
 fclose(file1);
 fclose(file2);
 
-catch
+catch ME
     file = fopen('errorFileEixam_BisectionMethod.txt', 'a');
     datenow = datestr(now);
     datenow = strcat(datenow, ': ');
-    lastmsg = lasterr;
+    lastmsg = ME.message;
     fprintf(file, '%s %s\r\n', datenow, lastmsg);
     fclose(file);
 end

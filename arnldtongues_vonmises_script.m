@@ -17,6 +17,7 @@ k
 p_ord
 q
 branch
+Ie_ext
 
 % Arguments from command window (in case Octave is used)
 % args = argv()
@@ -30,37 +31,41 @@ branch
 % Script arguments:
 %{
     type --> Gamma mechanism (1 for PING, 2 for ING)
-    coord --> Component where perturbation is applied (1 for Ve, 2 for Vi)
+    coord --> Component where perturbation is applied (1 for Ve, 2 for Vi or 3 for both)
     k --> Von Mises parameter (input concentration factor)
     p_ord --> Oscillator's revolutions (order of the Arnold tongue)
     q --> Period of q-periodic points
     branch --> Branch to compute (1 for the left, 2 for the right)
+    Ie_ext --> Constant current to exc. neurons
 %}
 
 format long;
 
 % Integration tolerances (1st and 2nd variational equations of phase equation)
-options_ode = odeset('AbsTol', 1e-14, 'RelTol', 5e-14, 'InitialStep', 1e-3);
+options_ode = odeset('AbsTol', 1e-16, 'RelTol', 5e-14, 'InitialStep', 1e-3);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Loading data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 folder = pwd; % Current folder
 
+% Auxiliar strings for the values of Ie_ext
+auxstr = ['_Ie_ext', num2str(Ie_ext)];
+auxstr1 = ['_Ie_ext', num2str(Ie_ext), '_V'];
+
 % --> Oscillator period
 if type == 1
-    name_file = 'period_ping.txt';
+    name_file = ['period_ping', auxstr, '.txt'];
 else
-    name_file = 'period_ing.txt';
+    name_file = ['period_ing', auxstr, '.txt'];
 end
 file = fopen(fullfile(folder, name_file), 'r');
-formatSpec = '%f';
-T = fscanf(file, formatSpec);
+T = fscanf(file, '%f');
 fclose(file);
 
 % --> Infinitesimal phase response curve
 if type == 1
-    name_file = 'iPRC_ping.txt';
+    name_file = ['iPRC_ping', auxstr1, '.txt'];
 else
-    name_file = 'iPRC_ing.txt';
+    name_file = ['iPRC_ing', auxstr1, '.txt'];
 end
 file = fopen(fullfile(folder, name_file), 'r');
 formatSpec = '%f %f %f'; sizeZ = [3 Inf];
@@ -70,11 +75,11 @@ fclose(file);
 
 % --> First and second derivatives of the iPRC
 if type == 1
-    name_file_d1 = 'dPRC_ping.txt';
-    name_file_d2 = 'ddPRC_ping.txt';
+    name_file_d1 = ['dPRC_ping', auxstr, '.txt'];
+    name_file_d2 = ['ddPRC_ping', auxstr, '.txt'];
 else
-    name_file_d1 = 'dPRC_ing.txt';
-    name_file_d2 = 'ddPRC_ing.txt';
+    name_file_d1 = ['dPRC_ing', auxstr, '.txt'];
+    name_file_d2 = ['ddPRC_ing', auxstr, '.txt'];
 end
 
 file = fopen(fullfile(folder, name_file_d1), 'r');
@@ -86,20 +91,26 @@ file = fopen(fullfile(folder, name_file_d2), 'r');
 res = fscanf(file, formatSpec, sizeZ); res = res';
 dd2 = res(:,1); ddZ = res(:,2:3); % Second derivative
 fclose(file);
+
+% Sum of the iPRC-V's (only when the perturbation is applied to both variables)
+if coord == 3
+    Z(:,3) = Z(:,1) + Z(:,2);
+    dZ(:,3) = dZ(:,1) + dZ(:,2);
+    ddZ(:,3) = ddZ(:,1) + ddZ(:,2);
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Linear interpolation of the component coord of the iPRC (interp1q or griddedInterpolant)
 % PRC = @(l) interp1q(t, Z(:,coord), l); % Quick 1D linear interpolation (not recommended)
 % dPRC = @(l) interp1q(dd1, dZ(:,coord), l); % Quick 1D linear interpolation (not recommended)
 % ddPRC = @(l) interp1q(dd2, ddZ(:,coord), l); % Quick 1D linear interpolation (not recommended)
-PRC = griddedInterpolant(t, Z(:,coord)); % GriddedInterpolant function
-dPRC = griddedInterpolant(dd1, dZ(:,coord)); % GriddedInterpolant function
-ddPRC = griddedInterpolant(dd2, ddZ(:,coord)); % GriddedInterpolant function
+PRC = griddedInterpolant(t, Z(:,coord), 'makima'); % GriddedInterpolant function
+dPRC = griddedInterpolant(dd1, dZ(:,coord), 'makima'); % GriddedInterpolant function
+ddPRC = griddedInterpolant(dd2, ddZ(:,coord), 'makima'); % GriddedInterpolant function
 
 % Initial conditions (PING - Ve, PING - Vi & ING - Vi cases)
-A = 1;
+A = 0.1;
 if branch == 1
-    
     % Choose a point p = Tp/T lying on left edge of the p_ord : q plateau
     p = iniconp(type, coord, k, p_ord, q, branch);
     if type == 1
@@ -131,7 +142,6 @@ if branch == 1
     % Initial condition for the left branch
     inc_left = [xl; Tl; A];
 else
-    
     % Choose a point p = Tp/T lying on right edge of the p_ord : q plateau
     p = iniconp(type, coord, k, p_ord, q, branch);
     if type == 1
@@ -185,18 +195,20 @@ end
 name_file = strcat(name_file, '_coord_');
 if coord == 1
     name_file = strcat(name_file, 'Ve');
-else
+elseif coord == 2
     name_file = strcat(name_file, 'Vi');
+else
+    name_file = strcat(name_file, 'VeVi');
 end
 
 % Opening/creating file (discarding existing contents)
-name_file = strcat(name_file, ['_k', num2str(k), '.txt']);
+name_file = strcat(name_file, ['_k', num2str(k), auxstr, '.txt']);
 fclose(fopen(fullfile(folder, name_file), 'w'));
 
 try
 
 j = 1;
-while j <= 2 % j == 1: Branch lower part (A -> 0), j == 2 Branch upper part (A -> 2)
+while j <= 2 % j == 1: Branch lower part (A -> 0), j == 2 Branch upper part (A -> 0.25)
     % Initial point near the real left/right Arnold tongue's boundary
     if branch == 1
         w0 = inc_left;
@@ -210,7 +222,7 @@ while j <= 2 % j == 1: Branch lower part (A -> 0), j == 2 Branch upper part (A -
     % Number of reductions of the step along the tangent line
     reduction = 0;
 
-    while arnold_iter <= max_arnold_iter && ((j==1)*(w0(3) > 1e-6) || (j==2)*(w0(3) < 2.11))
+    while arnold_iter <= max_arnold_iter && ((j==1)*(w0(3) > 1e-6) || (j==2)*(w0(3) < 0.25))
         fprintf('\nContinuation iteration: %d\n', arnold_iter);
         
         % CONTINUATION: Correction step (Modified Newton Method)
@@ -295,11 +307,11 @@ while j <= 2 % j == 1: Branch lower part (A -> 0), j == 2 Branch upper part (A -
 
 end
 
-catch
+catch ME
     file = fopen('errorFileEixam_ArnoldTongues.txt', 'a');
     datenow = datestr(now);
     datenow = strcat(datenow, ': ');
-    lastmsg = lasterr;
+    lastmsg = ME.message;
     fprintf(file, '%s %s\r\n', datenow, lastmsg);
     fclose(file);
 end
