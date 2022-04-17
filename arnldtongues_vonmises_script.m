@@ -27,6 +27,7 @@ Ie_ext
 % p_ord = args{4};
 % q = args{5};
 % branch = args{6};
+% Ie_ext = args{7};
 
 % Script arguments:
 %{
@@ -108,64 +109,45 @@ PRC = griddedInterpolant(t, Z(:,coord), 'makima'); % GriddedInterpolant function
 dPRC = griddedInterpolant(dd1, dZ(:,coord), 'makima'); % GriddedInterpolant function
 ddPRC = griddedInterpolant(dd2, ddZ(:,coord), 'makima'); % GriddedInterpolant function
 
-% Initial conditions (PING - Ve, PING - Vi & ING - Vi cases)
+%%%%%%% Initial conditions (PING - Ve, Vi and VeVi & ING - Vi cases) %%%%%%
 A = 0.1;
+
+% Choose a point p = Tp/T lying on left edge of the p_ord : q plateau
+p = iniconp(type, coord, k, p_ord, q, branch);
+if coord == 3 % case VeVi
+    p = iniconp1(type, coord, k, p_ord, q, branch);
+end
+
+% Check whether the file with fixed/periodic points exists or not
+if type == 1
+    name_file = ['bisect_mth_stb_ping_coord_', num2str(coord)];
+else
+    name_file = ['bisect_mth_stb_ing_coord_', num2str(coord)];
+end
+name_file = strcat(name_file, ['_A', num2str(A), '_k', num2str(k), ...
+    '_p', num2str(round(1000*p)/1000), 'approx_', num2str(q), ...
+    'periodicpoints.txt']); % filename
+
+if exist(name_file, 'file') ~= 0
+    % Loading fixed/periodic points of the corresponding stroboscopic map
+    file = fopen(fullfile(folder, name_file), 'r');
+    formatSpec = '%f %f'; size_stb = [2 Inf];
+    res1 = fscanf(file, formatSpec, size_stb); res1 = res1';
+    xs = res1(:,1);
+    fclose(file);
+else
+    % Compute fixed/periodic points of the corresponding stroboscopic map
+    main_stroboscopic_map
+end
+    
 if branch == 1
-    % Choose a point p = Tp/T lying on left edge of the p_ord : q plateau
-    p = iniconp(type, coord, k, p_ord, q, branch);
-    if type == 1
-        name_file = ['bisect_mth_stb_ping_coord_', num2str(coord)];
-    else
-        name_file = ['bisect_mth_stb_ing_coord_', num2str(coord)];
-    end
-    name_file = strcat(name_file, ['_A', num2str(A), '_k', num2str(k), ...
-        '_p', num2str(round(1000*p)/1000), 'approx_', num2str(q), ...
-        'periodicpoints.txt']);
-    
-    % Check if the file with fixed/periodic points exists or not
-    if exist(name_file, 'file') ~= 0
-        % Loading fixed/periodic points of the corresponding stroboscopic map
-        file = fopen(fullfile(folder, name_file), 'r');
-        formatSpec = '%f %f'; size_stb = [2 Inf];
-        res1 = fscanf(file, formatSpec, size_stb); res1 = res1';
-        xs = res1(:,1);
-        fclose(file);
-    else
-        % Computing fixed/periodic points of the corresponding stroboscopic map
-        main_stroboscopic_map
-    end
-    
     [~, ind] = min(abs(xs-T/2));
     xl = xs(ind); % Choose stable fixed/periodic point closer to T/2
     Tl = p*T; % Choose the leftmost point on the "p_ord : q plateau"
     
     % Initial condition for the left branch
     inc_left = [xl; Tl; A];
-else
-    % Choose a point p = Tp/T lying on right edge of the p_ord : q plateau
-    p = iniconp(type, coord, k, p_ord, q, branch);
-    if type == 1
-        name_file = ['bisect_mth_stb_ping_coord_', num2str(coord)];
-    else
-        name_file = ['bisect_mth_stb_ing_coord_', num2str(coord)];
-    end
-    name_file = strcat(name_file, ['_A', num2str(A), '_k', num2str(k), ...
-        '_p', num2str(round(1000*p)/1000), 'approx_', num2str(q), ...
-        'periodicpoints.txt']);
-    
-    % Check if the file with fixed/periodic points exists or not
-    if exist(name_file, 'file') ~= 0
-        % Loading fixed/periodic points of the corresponding stroboscopic map
-        file = fopen(fullfile(folder, name_file), 'r');
-        formatSpec = '%f %f'; size_stb = [2 Inf];
-        res1 = fscanf(file, formatSpec, size_stb); res1 = res1';
-        xs = res1(:,1);
-        fclose(file);
-    else
-        % Computing fixed/periodic points of the corresponding stroboscopic map
-        main_stroboscopic_map
-    end
-    
+else    
     [~, ind] = min(abs(xs-T/2));
     xr = xs(ind); % Choose stable fixed/periodic point closer to T/2
     Tr = p*T; % Choose the rightmost point on the "p_ord : q plateau"
@@ -173,6 +155,7 @@ else
     % Initial condition for the right branch
     inc_right = [xr; Tr; A];
 end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Arc step
 delta_s = 0.025;

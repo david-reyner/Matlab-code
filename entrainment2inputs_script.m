@@ -30,7 +30,7 @@ Ie_ext
 % Script arguments:
 %{
     type --> Gamma mechanism (1 for PING, 2 for ING)
-    coord --> Component where perturbation is applied (1 for Ve, 2 for Vi)
+    coord --> Component where perturbation is applied (1 for Ve, 2 for Vi or 3 for both)
     k1 --> Von Mises parameter (input concentration factor)
     A --> Amplitude of the perturbation
     Ie_ext --> Constant current to exc. neurons
@@ -81,6 +81,10 @@ formatSpec = '%f %f %f'; sizeZ = [3 Inf];
 res = fscanf(file, formatSpec, sizeZ); res = res';
 t_equi = res(:,1); Z_equi = res(:,2:3);
 fclose(file);
+
+% Sum of the iPRC-V's (only when the perturbation is applied to both variables)
+Z(:,3) = Z(:,1) + Z(:,2);
+Z_equi(:,3) = Z_equi(:,1) + Z_equi(:,2);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % In case the original iPRC Z (at non-equidistant points) is used, then
@@ -105,9 +109,11 @@ if type == 1
 %         TpT = linspace(0.71, 1, numTpT); % PING-Ve
 %         TpT = linspace(0.8, 1.01, numTpT); % for k1 = 20
         TpT = [0.85, 0.865, 0.88, 0.915, 0.93, 0.95, 0.97, 0.99]; % for k1 = 2
-    else
+    elseif coord == 2
 %         TpT = linspace(0.965, 1, numTpT); % PING-Vi (normalized von mises)
         TpT = linspace(0.91, 1.05, numTpT); % PING-Vi
+    else
+        TpT = [0.845 0.86 0.89 0.91 0.93 0.95 0.975 1]; % PING-VeVi (for k1 = 2)
     end
 else
 %     TpT = linspace(0.932, 1, numTpT); % ING-Vi (normalized von mises)

@@ -10,7 +10,7 @@
 % and the oscillator.
 
 type
-coord
+coord=1
 A
 k1
 p
@@ -34,7 +34,7 @@ Ie_ext
 % Script arguments:
 %{
     type --> Gamma mechanism (1 for PING, 2 for ING)
-    coord --> Component where perturbation is applied (1 for Ve, 2 for Vi)
+    coord --> Component where perturbation is applied (1 for Ve, 2 for Vi or 3 for both)
     A --> Amplitude of the perturbation
     k1 --> Von Mises parameter (input concentration factor)
     p --> Ratio between periods of the 1st input and oscillator
@@ -89,6 +89,10 @@ formatSpec = '%f %f %f'; sizeZ = [3 Inf];
 res = fscanf(file, formatSpec, sizeZ); res = res';
 t_equi = res(:,1); Z_equi = res(:,2:3);
 fclose(file);
+
+% Sum of the iPRC-V's (only when the perturbation is applied to both variables)
+Z(:,3) = Z(:,1) + Z(:,2);
+Z_equi(:,3) = Z_equi(:,1) + Z_equi(:,2);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % In case the original iPRC Z (at non-equidistant points) is used, then

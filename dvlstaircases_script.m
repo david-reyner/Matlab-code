@@ -78,6 +78,7 @@ t_equi = res(:,1); Z_equi = res(:,2:3);
 fclose(file);
 
 % Sum of the iPRC-V's (only when the perturbation is applied to both variables)
+Z(:,3) = Z(:,1) + Z(:,2);
 Z_equi(:,3) = Z_equi(:,1) + Z_equi(:,2);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

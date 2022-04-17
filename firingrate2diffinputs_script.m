@@ -1,6 +1,5 @@
 %%
-%%%%%%%%%%%%%%%%%%%%%% Firing rates - Time evolution %%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%% (Von Mises version) %%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%% Firing rate and synaptic variables - Time evolution %%%%%%%%%%%
 
 % Here we display how the excitatory firing rate and the inhibitory synapse
 % of the single-perturbed system are modified by the interference of a 
@@ -12,12 +11,18 @@
 close all; clear all; clc;
 
 type = input('\nGamma mechanism (1 for PING or 2 for ING): '); % Gamma mechanism
-coord = input('\nCoordinate (1 for Ve or 2 for Vi): '); % Component where perturbation is applied
+coord = input('\nCoordinate (1 for Ve, 2 for Vi or 3 for both): '); % Component where perturbation is applied
 if coord == 1
     coord = 2;
-else
+elseif coord == 2
     coord = 6;
+else
+    coord = [2, 6];
 end
+
+% External constant current (oscillations closer/further to the Hopf bifurcation)
+Ie_ext = input('\nConstant current to exc. neurons: ');
+auxstr = ['_Ie_ext', num2str(Ie_ext)];
 
 % Amplitude, intrinsic parameters and frequency relationships
 A = input('\nAmplitude of the perturbation: ');
@@ -25,10 +30,6 @@ k1 = input('\nConcentration factor of the first input: ');
 p = input('\nRelation between periods of the 1st input and the oscillator (i.e. p = T1/T*): ');
 k2 = input('\nConcentration factor of the second input: ');
 qs = input('\nRelations between periods of the 2nd and the 1st inputs (i.e. q = T2/T1): ');
-
-% External constant current (oscillations closer/further to the Hopf bifurcation)
-Ie_ext = input('\nConstant current to exc. neurons: ');
-auxstr = ['_Ie_ext', num2str(Ie_ext)];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Loading data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 folder = pwd; % Current folder
@@ -75,7 +76,31 @@ else
 end
 parm = [tau_e; tau_i; delta_e; delta_i; eta_e; eta_i; 
         tau_se; tau_si; Jee; Jei; Jie; Jii; Ie_ext; Ii_ext];
-    
+
+% Initial condition lying on the oscillator of the unperturbed case
+phase0 = x0;
+
+% Integration tolerances (Perturbed firing rate model)
+options_ode = odeset('AbsTol', 1e-14, 'RelTol', 1e-13);
+
+%%% Digression: Impact of perturbation on firing rate (Ve VS Vi VS VeVi) %%
+% Frequency-identical periodic von Mises distributions
+pt1 = @(t) vonmises_dist(t, 0, k1, p*T);
+pt2 = @(t) vonmises_dist(t, p*T/2, k2, p*T);
+
+% Integrating system perturbed by the two von Mises inputs
+[t_prt, x_prt] = ode45(@(t, x) perturbed_full_synaptic_firing_rate_equations(t, ...
+    x, parm, A, pt1(t) + pt2(t), coord), [0 500], phase0, options_ode);
+
+figure; hold on; box on; set(gca, 'Fontsize', 15); axfr = gca;
+xlabel('Time (ms)', 'Fontsize', 18, 'FontWeight', 'bold');
+ylabel('Firing rate (kHz)', 'Fontsize', 18, 'FontWeight', 'bold');
+plot(t_prt, x_prt(:,1), 'r-', 'Linewidth', 1.5); % exc. firing rate
+plot(t_prt, x_prt(:,5), 'b-', 'Linewidth', 1.5); % inh. firing rate
+plot(t_prt, A*pt1(t_prt), '-k', 'Linewidth', 1.5); % 1st input
+plot(t_prt, A*pt2(t_prt), '--k', 'Linewidth', 1.5); % 2nd input
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 cmap = hsv(6);
 
 % Loop on the given set qs of relations T2/T1
@@ -101,13 +126,7 @@ for i = 1:length(qs)
     t_snd = 25*T1;
 
     % Second periodic perturbation with period T2 (Von Mises distribution)
-    pt2 = @(t) vonmises_dist(t-t_snd, mu2, k2, T2); 
-
-    % Initial condition lying on the oscillator of the unperturbed case
-    phase0 = x0;
-
-    % Integration tolerances (Perturbed firing rate model)
-    options_ode = odeset('AbsTol', 1e-14, 'RelTol', 1e-13);
+    pt2 = @(t) vonmises_dist(t-t_snd, mu2, k2, T2);
 
     % Integrating perturbed system
     [t_prt, x_prt] = ode45(@(t, x) perturbed_full_synaptic_firing_rate_equations(t, ...
@@ -158,9 +177,9 @@ for i = 1:length(qs)
     
     % Axes positions
     ax.Position = [ax.Position(1) ax.Position(2)-0.225 ...
-                      ax.Position(3) ax.Position(4)+0.275];
+                   ax.Position(3) ax.Position(4)+0.275];
     ax1.Position = [ax1.Position(1)+0.017 ax1.Position(2)+0.035 ...
-                      ax1.Position(3)-0.06 ax1.Position(4)-0.18];
+                    ax1.Position(3)-0.06 ax1.Position(4)-0.18];
     ax.Position(1) = ax1.Position(1);
     ax.Position(3) = ax1.Position(3);
     
@@ -168,17 +187,17 @@ for i = 1:length(qs)
     folder_fig = strcat(pwd, '\Firing Rate - 2 competitors'); % folder
     name_fig = 'firingrate_2inputs';
     if type == 1
-        name_fig = strcat(name_fig, ['_ping_coord_', num2str(coord)]);
+        name_fig = strcat(name_fig, ['_ping_coord_', strrep(num2str(coord), ' ', '')]);
     else
-        name_fig = strcat(name_fig, ['_ing_coord_', num2str(coord)]);
+        name_fig = strcat(name_fig, ['_ing_coord_', strrep(num2str(coord), ' ', '')]);
     end
     name_fig = strcat(name_fig, ['_A', num2str(A), '_k1', num2str(k1), ...
         '_p', num2str(p), '_k2', num2str(k2), '_q', num2str(q)]); % filename
     
     % PDF format
-    set(gca, 'Fontsize', 36);
-    set(get(gca, 'XLabel'), 'FontSize', 38);
-    set(get(gca, 'YLabel'), 'FontSize', 38);
+    set(ax, 'Fontsize', 36); set(ax1, 'Fontsize', 36);
+    set(get(ax, 'XLabel'), 'FontSize', 38); set(get(ax1, 'XLabel'), 'FontSize', 38);
+    set(get(ax, 'YLabel'), 'FontSize', 38); set(get(ax1, 'YLabel'), 'FontSize', 38);
     set(gcf, 'PaperPositionMode', 'manual');   
     set(gcf, 'PaperOrientation', 'landscape');
     name_pdf = strcat(name_fig, '.pdf');
@@ -186,9 +205,9 @@ for i = 1:length(qs)
     print(gcf, '-dpdf', '-fillpage', fullfile(folder_fig, name_pdf));
 
     % EPS format
-    set(gca, 'Fontsize', afs);
-    set(get(gca, 'XLabel'), 'FontSize', lfs);
-    set(get(gca, 'YLabel'), 'FontSize', lfs);
+    set(ax, 'Fontsize', afs); set(ax1, 'Fontsize', afs);
+    set(get(ax, 'XLabel'), 'FontSize', lfs); set(get(ax1, 'XLabel'), 'FontSize', lfs);
+    set(get(ax, 'YLabel'), 'FontSize', lfs); set(get(ax1, 'YLabel'), 'FontSize', lfs);
     name_eps = strcat(name_fig, '.eps');
     fprintf('\nSaving figure: ''%s''\n', name_eps);
     print(gcf, '-depsc', '-tiff', fullfile(folder_fig, name_eps));

@@ -35,7 +35,7 @@ Ie_ext
 % Script arguments:
 %{
     type --> Gamma mechanism (1 for PING, 2 for ING)
-    coord --> Component where perturbation is applied (1 for Ve, 2 for Vi)
+    coord --> Component where perturbation is applied (1 for Ve, 2 for Vi or 3 for both)
     type_prt --> Type of perturbation (1 for Sinusoidal, 2 for Von Mises)
     p --> Revolutions completed by the oscillator
     q --> Revolutions completed by the input
@@ -133,18 +133,24 @@ end
 % Coordinate where the perturbation is applied
 if coord == 1
     coord = 2;
-else
+elseif coord == 2
     coord = 6;
+else
+    coord = [2, 6];
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%% Arnold tongues boundaries %%%%%%%%%%%%%%%%%%%%%%%%
 % Files to be loaded
 if type == 1
     aux_name = ['_', num2str(p), num2str(q), '_ping_coord_'];
-    if coord == 2
-        aux_name = strcat(aux_name, 'Ve');
+    if length(coord) == 1
+        if coord == 2
+            aux_name = strcat(aux_name, 'Ve');
+        else
+            aux_name = strcat(aux_name, 'Vi');
+        end
     else
-        aux_name = strcat(aux_name, 'Vi');
+        aux_name = strcat(aux_name, 'VeVi');
     end
 else
     aux_name = ['_', num2str(p), num2str(q), '_ing_coord_Vi'];
@@ -273,7 +279,6 @@ fclose(fopen(fullfile(folder, name_file_sndE), 'w'));
 
 name_file_snd = strcat(name_file_snd, auxstr, '.txt'); % to save data from the 2nd peak
 fclose(fopen(fullfile(folder, name_file_snd), 'w'));
-
 
 try
 
